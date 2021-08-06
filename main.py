@@ -11,40 +11,38 @@ def checkIfAnyIsEmpty(centers):
         return False
 def recopilateCodes():
         centros = dict()
-        for j in ["29", "41","04" ,"11", "14", "18", "21", "23"]:
-                for i in ["Sección de Educación Secundaria Obligatoria","Instituto de Educación Secundaria","Centro de Convenio"]:
-                        driver = webdriver.Firefox(firefox_profile=profile, executable_path=".\\geckodriver-v0.29.1-win64\\geckodriver.exe")
-                        for k in range(2):
-                                driver.get("http://www.juntadeandalucia.es/educacion/vscripts/centros/index.asp")
-                                driver.find_element_by_id("solapastab1").click()
-                                Select(driver.find_element_by_id("PROVINCIA")).select_by_value(j)
-                                driver.find_element_by_id("publica").click()
-                                Select(driver.find_element_by_id("dengen")).select_by_value(i)
-                                for t in driver.find_elements_by_tag_name("div")[0].find_elements_by_tag_name("a"):
-                                        if t.get_attribute("onclick") != None:
-                                                if "envioconsulta" in t.get_attribute("onclick").lower():
-                                                        t.click()
-                                                        break
-                        time.sleep(5)
-                        for tr in driver.find_elements_by_tag_name("tr"):
-                                try:
-                                        flag = False
-                                        for img in tr.find_elements_by_xpath("./child::*")[7].find_elements_by_xpath("./child::*"):
-                                                if "secundaria" in img.get_attribute("src").lower():
-                                                        flag = True
-                                                        break
-                                        td = tr.find_elements_by_xpath("./child::*")
-                                        codigo = td[1].find_elements_by_xpath("./child::*")[0].text.strip()
-                                        codigo = "0"*(len(codigo)-8) + codigo
-                                        if "buscacentro" in tr.get_attribute("onclick").lower() and flag:
-                                                centros[codigo] = []
-                                                print(f"Recopilado el centro de código {codigo}")
-                                except:
-                                        continue
-                        driver.close()
+        for i in ["Sección de Educación Secundaria Obligatoria","Instituto de Educación Secundaria","Centro de Convenio"]:
+                driver = webdriver.Firefox(firefox_profile=profile, executable_path=".\\geckodriver-v0.29.1-win64\\geckodriver.exe")
+                for k in range(2):
+                        driver.get("http://www.juntadeandalucia.es/educacion/vscripts/centros/index.asp")
+                        driver.find_element_by_id("solapastab1").click()
+                        Select(driver.find_element_by_id("PROVINCIA")).select_by_value("00")
+                        driver.find_element_by_id("publica").click()
+                        Select(driver.find_element_by_id("dengen")).select_by_value(i)
+                        for t in driver.find_elements_by_tag_name("div")[0].find_elements_by_tag_name("a"):
+                                if t.get_attribute("onclick") != None:
+                                        if "envioconsulta" in t.get_attribute("onclick").lower():
+                                                t.click()
+                                                break
+                time.sleep(10) #Podemos sustituir esto por un checkeo que revise el loader ajax-loading.gif
+                for tr in driver.find_elements_by_tag_name("tr"):
+                        try:
+                                flag = False
+                                for img in tr.find_elements_by_xpath("./child::*")[7].find_elements_by_xpath("./child::*"):
+                                        if "secundaria" in img.get_attribute("src").lower():
+                                                flag = True
+                                                break
+                                td = tr.find_elements_by_xpath("./child::*")
+                                codigo = td[1].find_elements_by_xpath("./child::*")[0].text.strip()
+                                codigo = "0"*(len(codigo)-8) + codigo
+                                if "buscacentro" in tr.get_attribute("onclick").lower() and flag:
+                                        centros[codigo] = []
+                                        print(f"Recopilado el centro de código {codigo}")
+                        except:
+                                continue
+                driver.close()
         return centros
 profile = webdriver.FirefoxProfile()
-# # ajax-loading.gif Buscar imagen para mejorar
 profile.DEFAULT_PREFERENCES['frozen']['security.fileuri.strict_origin_policy']= True
 centros = recopilateCodes()
 while checkIfAnyIsEmpty(centros):
@@ -158,7 +156,7 @@ driver.close()
 dumb =set()
 ids = ["00590005", "10590005", "11590005", "12590005"]
 duration = 1
-header = f"CODIGO NOMBRE_CENTRO PROVINCIA MUNICIPIO BACH FPB FPGM FPGS INGLES FRANCES ALEMAN PLAZAS_NORMAL PLAZAS_FRANCES PLAZAS_INGLES PLAZAS_ALEMAN"
+header = f"CODIGO NOMBRE_CENTRO PROVINCIA MUNICIPIO BACH FPB FPGM FPGS INGLES FRANCES ALEMAN PLAZAS_NORMAL PLAZAS_FRANCES PLAZAS_INGLES PLAZAS_ALEMAN "
 driver = webdriver.Firefox(firefox_profile=profile, executable_path=".\\geckodriver-v0.29.1-win64\\geckodriver.exe")
 driver.get("https://www.mapavacantesandalucia.es/")
 driver.find_elements_by_class_name("menu-icon")[0].click()
@@ -229,22 +227,19 @@ file.write(f"{header}\n")
 for i in centros:
         print(f"{i} => {centros[i]}")
         temp = f"{i};"
-        size = len(centros[i]) - len(ids) * 4
-        for j in range(size):
-                temp += str(centros[i][j]) + ";"
-        for k in range(int(len(ids) / 4)):
-                try:
-                        temp += f"{str(centros[i][size + k])};"
-                except:
-                        temp += "0;"
-                t = 1 + 2 * k + size
-                for j in interns.split(" "):
+        for j in range(0, 10 + len(ids)):
+                temp += f"{centros[i][j]};" 
+        for j in range(10 + len(ids), len(centros[i]), 2):
+                total = centros[i][j]
+                dict_center = centros[i][j + 1]
+                for k in dumb:
                         try:
-                                if j in centros[i][t]:
-                                        temp += str(centros[i][t + 1][j]) + ";"
+                                if k in dict_center:
+                                        temp += f"{dict_center[k]};"
                                 else:
                                         temp += "0;"
                         except:
-                                temp += "None;"
+                                temp += "0;"
+        temp += (10 + len(ids) * (len(dumb) + 2) - len(temp.split(";"))) * "0;"
         file.write(f"{temp}\n")
 file.close()
