@@ -4,6 +4,10 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 import time
+provincias = ["29", "41","04" ,"11", "14", "18", "21", "23"]
+provincias_names = ["Málaga", "Sevilla","Almería","Cádiz","Córdoba", "Granada","Huelva" ,"Jaén"]
+type_of_center = ["Sección de Educación Secundaria Obligatoria","Instituto de Educación Secundaria","Centro de Convenio"]
+list_ids = ["00590005", "10590005", "11590005", "12590005"]
 def checkIfAnyIsEmpty(centers):
         for i in centers.values():
                 if len(i) == 0:
@@ -11,7 +15,7 @@ def checkIfAnyIsEmpty(centers):
         return False
 def recopilateCodes():
         centros = dict()
-        for i in ["Sección de Educación Secundaria Obligatoria","Instituto de Educación Secundaria","Centro de Convenio"]:
+        for i in type_of_center:
                 driver = webdriver.Firefox(firefox_profile=profile, executable_path=".\\geckodriver-v0.29.1-win64\\geckodriver.exe")
                 for k in range(2):
                         driver.get("http://www.juntadeandalucia.es/educacion/vscripts/centros/index.asp")
@@ -29,13 +33,13 @@ def recopilateCodes():
                         try:
                                 flag = False
                                 for img in tr.find_elements_by_xpath("./child::*")[7].find_elements_by_xpath("./child::*"):
-                                        if "secundaria" in img.get_attribute("src").lower():
+                                        if "secundaria" in img.get_attribute("src").lower() or "bachillerato" in img.get_attribute("src").lower():
                                                 flag = True
                                                 break
                                 td = tr.find_elements_by_xpath("./child::*")
                                 codigo = td[1].find_elements_by_xpath("./child::*")[0].text.strip()
                                 codigo = "0"*(len(codigo)-8) + codigo
-                                if "buscacentro" in tr.get_attribute("onclick").lower() and flag:
+                                if flag:
                                         centros[codigo] = []
                                         print(f"Recopilado el centro de código {codigo}")
                         except:
@@ -46,10 +50,10 @@ profile = webdriver.FirefoxProfile()
 profile.DEFAULT_PREFERENCES['frozen']['security.fileuri.strict_origin_policy']= True
 centros = recopilateCodes()
 while checkIfAnyIsEmpty(centros):
-        prov = ["Málaga", "Sevilla","Almería","Cádiz","Córdoba", "Granada","Huelva" ,"Jaén"]
+        prov = provincias_names
         p = 0
-        for j in ["29", "41","04" ,"11", "14", "18", "21", "23"]:
-                for i in ["Sección de Educación Secundaria Obligatoria","Instituto de Educación Secundaria","Centro de Convenio"]:
+        for j in provincias:
+                for i in type_of_center:
                         driver = webdriver.Firefox(firefox_profile=profile, executable_path=".\\geckodriver-v0.29.1-win64\\geckodriver.exe")
                         for k in range(2):
                                 driver.get("http://www.juntadeandalucia.es/educacion/vscripts/centros/index.asp")
@@ -65,15 +69,9 @@ while checkIfAnyIsEmpty(centros):
                         time.sleep(5)
                         for tr in driver.find_elements_by_tag_name("tr"):
                                 try:
-                                        flag = False
-                                        for img in tr.find_elements_by_xpath("./child::*")[7].find_elements_by_xpath("./child::*"):
-                                                if "secundaria" in img.get_attribute("src").lower():
-                                                        flag = True
-                                                        break
                                         td = tr.find_elements_by_xpath("./child::*")
                                         codigo = td[1].find_elements_by_xpath("./child::*")[0].text.strip()
-                                        codigo = "0"*(len(codigo)-8) + codigo
-                                        if "buscacentro" in tr.get_attribute("onclick").lower() and flag and len(centros[codigo]) == 0:
+                                        if len(centros[codigo]) == 0:
                                                 nombre_centro = td[2].text.strip()
                                                 municipio = td[3].text.strip()
                                                 inglesBil = "No"
@@ -89,19 +87,23 @@ while checkIfAnyIsEmpty(centros):
                                                                 alemanBil = "Si"
                                                 td[1].click()
                                                 driver.find_elements_by_tag_name("ul")[1].find_elements_by_xpath("./child::*")[0].find_elements_by_xpath("./child::*")[1].click()
-                                                fpb, fpgm, fpgs, bach = [], [], [], "No"
+                                                fpb, fpgm, fpgs, bach, ee, ea = "No", "No", "No", "No", "No", "No"
                                                 centro = driver.find_elements_by_class_name("centro")[1].text.split("\n")
                                                 for line in centro:
                                                         line_min = line.lower()
                                                         if "Formación Profesional".lower() in line_min:
-                                                                fpb.append(line)
+                                                                fpb = "Si"
                                                         if "Medio".lower() in line_min:
-                                                                fpgm.append(line)
+                                                                fpgm = "Si"
                                                         if "Bachillerato".lower() in line_min:
                                                                 bach = "Si"
                                                         if "Superior".lower() in line_min:
-                                                                fpgs.append(line)
-                                                centros[codigo] = [nombre_centro, prov[p], municipio, bach, "-".join(fpb), "-".join(fpgm), "-".join(fpgs), inglesBil, francesBil, alemanBil, 0, 0, 0, 0]
+                                                                fpgs = "Si"
+                                                        if "adulta".lower() in line_min:
+                                                                ea = "Si"
+                                                        if "Especial".lower() in line_min:
+                                                                ee = "Si"
+                                                centros[codigo] = [nombre_centro, prov[p], municipio, bach, fpb, fpgm, fpgs, ee, ea, inglesBil, francesBil, alemanBil, 0, 0, 0, 0]
                                                 print(f"{codigo} => {centros[codigo]}")
                                                 driver.execute_script('document.getElementById("impresion").childNodes[1].childNodes[1].click()')
                                                 time.sleep(0.5)
@@ -114,7 +116,7 @@ driver.get("http://www.juntadeandalucia.es/educacion/vscripts/dgpc/pf20/index.as
 driver.find_elements_by_id("botonLogin")[1].click()
 time.sleep(1)
 tr = driver.find_elements_by_tag_name("table")[1].find_elements_by_xpath("./child::*")[0].find_elements_by_xpath("./child::*")[2:176]
-ids = ["00590005", "10590005", "11590005", "12590005"]
+ids = list_ids.copy()
 n_tr = len(tr)
 i = 0
 id = -len(ids)
@@ -154,9 +156,9 @@ while len(ids) > 0 and i < n_tr:
         tr = driver.find_elements_by_tag_name("table")[1].find_elements_by_xpath("./child::*")[0].find_elements_by_xpath("./child::*")[2:176]
 driver.close()
 dumb =set()
-ids = ["00590005", "10590005", "11590005", "12590005"]
+ids = list_ids.copy()
 duration = 1
-header = f"CODIGO NOMBRE_CENTRO PROVINCIA MUNICIPIO BACH FPB FPGM FPGS INGLES FRANCES ALEMAN PLAZAS_NORMAL PLAZAS_FRANCES PLAZAS_INGLES PLAZAS_ALEMAN "
+header = f"CODIGO NOMBRE_CENTRO PROVINCIA MUNICIPIO BACH FPB FPGM FPGS EE EA INGLES FRANCES ALEMAN PLAZAS_NORMAL PLAZAS_FRANCES PLAZAS_INGLES PLAZAS_ALEMAN "
 driver = webdriver.Firefox(firefox_profile=profile, executable_path=".\\geckodriver-v0.29.1-win64\\geckodriver.exe")
 driver.get("https://www.mapavacantesandalucia.es/")
 driver.find_elements_by_class_name("menu-icon")[0].click()
@@ -200,6 +202,7 @@ for j in ids:
                 time.sleep(duration / 2)
                 temp = centro.text.split("\n")
                 codigo = temp[0].strip().split(" ")[-1].replace("(","").replace(")", "")
+                codigo = "0"*(8 - len(codigo)) + codigo
                 if codigo in centros:
                         vacantes = int(temp[6].strip().split(" ")[0])
                         tables = driver.find_elements_by_tag_name("table")
@@ -227,9 +230,10 @@ file.write(f"{header}\n")
 for i in centros:
         print(f"{i} => {centros[i]}")
         temp = f"{i};"
-        for j in range(0, 10 + len(ids)):
+        init_size = 12 + len(list_ids)
+        for j in range(0, init_size):
                 temp += f"{centros[i][j]};" 
-        for j in range(10 + len(ids), len(centros[i]), 2):
+        for j in range(init_size, len(centros[i]), 2):
                 total = centros[i][j]
                 dict_center = centros[i][j + 1]
                 for k in dumb:
@@ -240,6 +244,6 @@ for i in centros:
                                         temp += "0;"
                         except:
                                 temp += "0;"
-        temp += (10 + len(ids) * (len(dumb) + 2) - len(temp.split(";"))) * "0;"
+        temp += (((init_size + (len(dumb) + 1) * len(list_ids))) - (len(temp.split(";")))) * "0;"
         file.write(f"{temp}\n")
 file.close()
