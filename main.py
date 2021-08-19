@@ -1,15 +1,56 @@
+import sys
 import datetime
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 import time
+input = sys.argv[1::]
 header = "CODIGO NOMBRE_CENTRO PROVINCIA MUNICIPIO BACH FPB FPGM FPGS E_ESPECIAL E_ADULTO_BACH E_ADULTO_ESO INGLES FRANCES ALEMAN "
+input_size = len(input)
+def id_val(val):
+        res = []
+        for j in val.split(","):
+                if len(j) != 8 and j in res:
+                        print(f"Error con el formato del id {j}")
+                        exit()
+                res += [j]
+        return res
+def type(val):
+        res = ["secundaria", "bachillerato"]
+        if val == "--ALL":
+                return res
+        temp = []
+        for j in val.split(","):
+                if j in res:
+                        temp += [j]
+        if not len(temp):
+                print("No se ha encontrado ninguna coincidencia con el tipo de centro")
+                exit()
+        return temp
+val = dict()
+for j in range(0,input_size, 2):
+        try:
+                if input[j] == "-id":
+                        val[input[j]] = id_val(input[j + 1])
+                elif input[j] == "-t":
+                        val[input[j]] = type(input[j + 1])
+                else:
+                        print("Input no está definido correctamente")
+                        exit()
+        except:
+                print("Input no está definido correctamente")
+                exit()
 provincias = ["29", "41","04" ,"11", "14", "18", "21", "23"] #De momento No cambiar esto, por defecto leerá de todas las provincias
 provincias_names = ["Málaga", "Sevilla","Almería","Cádiz","Córdoba", "Granada","Huelva" ,"Jaén"]
 type_of_center = ["Sección de Educación Secundaria Obligatoria","Instituto de Educación Secundaria","Centro de Convenio"] #Deberá de poderse modificar por entrada por teclado
-list_ids = ["00590005", "10590005", "11590005", "12590005"] #Deberá de poderse modificar por una entrada por teclado
-types_center_valid = ["secundaria", "bachillerato"]
+# list_ids = ["00590005", "10590005", "11590005", "12590005"] #Deberá de poderse modificar por una entrada por teclado
+# types_center_valid = ["secundaria", "bachillerato"] #De momento se quedará así
+list_ids = val["-id"]
+types_center_valid = val["-t"]
+print(list_ids)
+print(types_center_valid)
+
 def centerIsValid(img):
         for k in types_center_valid:
                 if k in img:
