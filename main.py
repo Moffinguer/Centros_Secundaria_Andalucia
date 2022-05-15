@@ -10,7 +10,7 @@ header = "CODIGO NOMBRE_CENTRO PROVINCIA MUNICIPIO BACH FPB FPGM FPGS E_ESPECIAL
 provincias = ["29", "41","04" ,"11", "14", "18", "21", "23"] #De momento No cambiar esto, por defecto leerá de todas las provincias
 provincias_names = ["Málaga", "Sevilla","Almería","Cádiz","Córdoba", "Granada","Huelva" ,"Jaén"]
 type_of_center = ["Sección de Educación Secundaria Obligatoria","Instituto de Educación Secundaria","Centro de Convenio"] #Deberá de poderse modificar por entrada por teclado
-list_ids = ["00590005", "10590005", "11590005", "12590005"] #Deberá de poderse modificar por una entrada por teclado  
+list_ids = ["00590005", "10590005", "11590005", "12590005"] #Deberá de poderse modificar por una entrada por teclado
 types_center_valid = ["secundaria", "bachillerato"] #De momento se quedará así
 input_size = len(input)
 val = dict()
@@ -142,7 +142,7 @@ def recopilateCenters(centros, ids):
                                                                                 if "bachiller" in line_min:
                                                                                         eab = "Si"
                                                                                 elif "e.s.o".lower() in line_min:
-                                                                                        eas = "Si" 
+                                                                                        eas = "Si"
                                                                         if "Especial".lower() in line_min:
                                                                                 ee = "Si"
                                                                 prov_name_by_code = provincias_names[provincias.index(codigo[0:2])]
@@ -160,6 +160,7 @@ def recopilateCenters(centros, ids):
         return centros
 def plazasByCenter(centros, list_ids, header):
         error = True
+        uri = f"http://www.juntadeandalucia.es/educacion/vscripts/dgpc/pf{datetime.date.today().year % 100 - 1}/index.asp"
         while error:
                 try:
 
@@ -169,7 +170,7 @@ def plazasByCenter(centros, list_ids, header):
                         while len(ids) > 0:
                                 driver = webdriver.Firefox(service=Service(".//geckodriver-v0.29.1-win64//geckodriver.exe"), options = webdriver.FirefoxOptions().add_argument('headless'))
                                 driver.maximize_window()
-                                driver.get("http://www.juntadeandalucia.es/educacion/vscripts/dgpc/pf21/index.asp")
+                                driver.get(uri)
                                 driver.find_elements_by_id("botonLogin")[1].click()
                                 time.sleep(1)
                                 tr = driver.find_elements_by_tag_name("table")[1].find_elements_by_xpath("./child::*")[0].find_elements_by_xpath("./child::*")[2:176]
@@ -181,7 +182,7 @@ def plazasByCenter(centros, list_ids, header):
                                         print(title)
                                         title = title.split(" ")
                                         temp_title = title[0].replace("(","").replace(")","").strip()
-                                        if temp_title in ids: 
+                                        if temp_title in ids:
                                                 for l in range(1,9):
                                                         td = tr[i].find_elements_by_xpath("./child::*")
                                                         num_teachers = int(td[l].text.strip())
@@ -201,8 +202,8 @@ def plazasByCenter(centros, list_ids, header):
                                                                 while error:
                                                                         try:
                                                                                 driver = webdriver.Firefox(service=Service(".//geckodriver-v0.29.1-win64//geckodriver.exe"), options = webdriver.FirefoxOptions().add_argument('headless'))
-                                
-                                                                                driver.get("http://www.juntadeandalucia.es/educacion/vscripts/dgpc/pf21/index.asp")
+
+                                                                                driver.get(uri)
                                                                                 driver.find_elements_by_id("botonLogin")[1].click()
                                                                                 time.sleep(1)
                                                                                 tr = driver.find_elements_by_tag_name("table")[1].find_elements_by_xpath("./child::*")[0].find_elements_by_xpath("./child::*")[2:176]
@@ -359,23 +360,9 @@ def writeOnCSV(centros, header, list_ids):
                         temp += f"{tipos['OTROS']};"
                         temp += f"{tipos['INTERINOS_CON_TIEMPO_DE_SERVICIO']};"
                         temp += f"{tipos['COMISIONES_DE_SERVICIO']};"
-                temp = f"{temp}\n" 
+                temp = f"{temp}\n"
                 file.write(temp)
         file.close()
-# for j in range(0,input_size, 2):
-#         try:
-#                 if input[j] == "-id":
-#                         val[input[j]] = id_val(input[j + 1])
-#                 elif input[j] == "-t":
-#                         val[input[j]] = type(input[j + 1])
-#                 else:
-#                         print("Input no está definido correctamente")
-#                         exit()
-#         except:
-#                 print("Input no está definido correctamente")
-#                 exit()
-# list_ids = val["-id"]
-# types_center_valid = val["-t"]
 centros = recopilateCenters(recopilateCodes(), list_ids)
 centros, header, subjects  = plazasByCenter(centros, list_ids, header)
 centros, header = getTotalPlazas(centros, header)
